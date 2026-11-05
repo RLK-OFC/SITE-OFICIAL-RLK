@@ -261,45 +261,68 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 <div class="panel"><h2>Notícias cadastradas</h2><div id="newsList" class="cards"></div></div>
 </section>
 
-<!-- CONTAS SECUNDÁRIAS -->
-<section id="section-contas-secundarias" class="section">
-<div class="panel">
-<h2 class="form-title" id="secondaryFormTitle">Cadastrar conta secundária</h2>
-<p class="muted">Cadastre cada conta extra e identifique o membro responsável por ela.</p>
-<form id="secondaryAccountForm">
-<input type="hidden" id="secondaryAccountId">
-<div class="grid">
-<div class="field">
-  <label>Nick da conta *</label>
-  <input id="secondaryNick" maxlength="80" required>
-</div>
 
-<div class="field">
-  <label>ID do Free Fire *</label>
-  <div style="display:flex;gap:8px;align-items:center">
-    <input id="secondaryGameId" inputmode="numeric" maxlength="30" required style="flex:1;min-width:0">
-    <button type="button" id="buscarContaBtn" class="btn">BUSCAR CONTA</button>
+<p class="muted">Cadastre cada conta extra e identifique o membro responsável por ela.</p>
+
+<form id="secondaryAccountForm">
+  <input type="hidden" id="secondaryAccountId">
+
+  <div class="grid">
+
+    <div class="field">
+      <label>Nick da conta *</label>
+      <input id="secondaryNick" maxlength="80" required>
+    </div>
+
+    <div class="field">
+      <label>ID do Free Fire *</label>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="secondaryGameId" inputmode="numeric" maxlength="30" required style="flex:1;min-width:0">
+        <button type="button" id="buscarContaBtn" class="btn">BUSCAR CONTA</button>
+      </div>
+
+      <small id="secondaryLookupMessage"></small>
+
+      <div id="secondaryAvatarPreview" class="hidden" style="display:flex;align-items:center;gap:12px;margin-top:12px">
+        <img id="secondaryAvatar" src="" alt="Avatar do jogador"
+             style="width:64px;height:64px;border-radius:12px;border:2px solid #f0182d;object-fit:cover">
+        <span id="secondaryAvatarName" style="font-weight:800"></span>
+      </div>
+    </div>
+
+    <div class="field full">
+      <label>Quem joga nesta conta? *</label>
+      <input id="secondaryResponsible" maxlength="100" required placeholder="Nick ou nome do membro responsável">
+    </div>
+
+    <div class="field full">
+      <label>Observação (opcional)</label>
+      <textarea id="secondaryObservation" maxlength="500" placeholder="Ex.: conta usada para jogar em outra line."></textarea>
+    </div>
+
   </div>
-  <small id="secondaryLookupMessage"></small>
-</div>
-<div class="field full"><label>Quem joga nesta conta? *</label><input id="secondaryResponsible" maxlength="100" required placeholder="Nick ou nome do membro responsável"></div>
-<div class="field full"><label>Observação (opcional)</label><textarea id="secondaryObservation" maxlength="500" placeholder="Ex.: conta usada para jogar em outra line."></textarea></div>
-</div>
-<div class="actions">
-<button class="btn" type="submit">SALVAR CONTA</button>
-<button class="btn btn-secondary" type="button" onclick="limparContaSecundaria()">LIMPAR</button>
-</div>
+
+  <div class="actions">
+    <button class="btn" type="submit">SALVAR CONTA</button>
+    <button class="btn btn-secondary" type="button" onclick="limparContaSecundaria()">LIMPAR</button>
+  </div>
 </form>
 </div>
+
 <div class="panel">
-<div class="top-actions">
-<h2 style="margin:0">Contas cadastradas</h2>
-<span class="small" id="secondaryAccountCount"></span>
-</div>
-<div id="secondaryAccountsList" class="cards"><div class="empty">Carregando contas...</div></div>
+  <div class="top-actions">
+    <h2 style="margin:0">Contas cadastradas</h2>
+    <span class="small" id="secondaryAccountCount"></span>
+  </div>
+
+  <div id="secondaryAccountsList" class="cards">
+    <div class="empty">Carregando contas...</div>
+  </div>
 </div>
 </section>
 </section>
+
 </main>
 
 <!-- MODAL DE JOGADORES -->
@@ -745,79 +768,155 @@ if(error){fail(error);$("secondaryAccountsList").innerHTML='<div class="empty">N
 contasSecundarias=data||[];
 renderizarContasSecundarias()
 }
+
+let avatarContaAtual = null;
+
+function atualizarPreviewAvatar(avatar, nick = "") {
+  const preview = $("secondaryAvatarPreview");
+  const imagem = $("secondaryAvatar");
+  const nome = $("secondaryAvatarName");
+
+  if (avatar) {
+    imagem.src = avatar;
+    nome.textContent = nick;
+    preview.classList.remove("hidden");
+  } else {
+    imagem.src = "";
+    nome.textContent = "";
+    preview.classList.add("hidden");
+  }
+}
+
 function renderizarContasSecundarias(){
-$("secondaryAccountCount").textContent=contasSecundarias.length+" conta(s)";
-if(!contasSecundarias.length){
-$("secondaryAccountsList").innerHTML='<div class="empty">Nenhuma conta secundária cadastrada.</div>';return
+  $("secondaryAccountCount").textContent = contasSecundarias.length + " conta(s)";
+
+  if(!contasSecundarias.length){
+    $("secondaryAccountsList").innerHTML =
+      '<div class="empty">Nenhuma conta secundária cadastrada.</div>';
+    return;
+  }
+
+  $("secondaryAccountsList").innerHTML = contasSecundarias.map(c => `
+    <article class="item">
+      <div style="display:flex;align-items:center;gap:12px">
+        ${c.avatar_url ? `
+          <img src="${esc(c.avatar_url)}" alt="Avatar de ${esc(c.nick)}"
+            style="width:58px;height:58px;border-radius:10px;object-fit:cover;border:2px solid #f0182d">
+        ` : ""}
+        <h3>${esc(c.nick)}</h3>
+      </div>
+
+      <div class="secondary-account-meta">
+        <span>ID: <strong>${esc(c.id_jogo)}</strong></span>
+        <span>Responsável: <strong>${esc(c.responsavel)}</strong></span>
+      </div>
+
+      ${c.observacao ? `<p>${esc(c.observacao)}</p>` : ""}
+
+      <div class="actions">
+        <button class="btn btn-small" onclick="editarContaSecundaria('${c.id}')">EDITAR</button>
+        <button class="btn btn-danger btn-small" onclick="excluirContaSecundaria('${c.id}')">EXCLUIR</button>
+      </div>
+    </article>
+  `).join("");
 }
-$("secondaryAccountsList").innerHTML=contasSecundarias.map(c=>`
-<article class="item">
-<h3>${esc(c.nick)}</h3>
-<div class="secondary-account-meta">
-<span>ID: <strong>${esc(c.id_jogo)}</strong></span>
-<span>Responsável: <strong>${esc(c.responsavel)}</strong></span>
-</div>
-${c.observacao?`<p>${esc(c.observacao)}</p>`:""}
-<div class="actions">
-<button class="btn btn-small" onclick="editarContaSecundaria('${c.id}')">EDITAR</button>
-<button class="btn btn-danger btn-small" onclick="excluirContaSecundaria('${c.id}')">EXCLUIR</button>
-</div>
-</article>`).join("")
-}
-$("secondaryAccountForm").addEventListener("submit",async e=>{
-e.preventDefault();
-if(usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7"){msg("mainMessage","Você não tem permissão para gerenciar essas contas.","error");return}
-const id=$("secondaryAccountId").value;
-const payload={
-nick:$("secondaryNick").value.trim(),
-id_jogo:$("secondaryGameId").value.trim(),
-responsavel:$("secondaryResponsible").value.trim(),
-observacao:$("secondaryObservation").value.trim()||null
-};
-if(!payload.nick||!payload.id_jogo||!payload.responsavel){msg("mainMessage","Preencha nick, ID e responsável.","error");return}
-const result=id
-?await db.from("contas_secundarias").update(payload).eq("id",id)
-:await db.from("contas_secundarias").insert(payload);
-if(result.error){fail(result.error);return}
-limparContaSecundaria();
-await carregarContasSecundarias();
-msg("mainMessage",id?"Conta secundária atualizada!":"Conta secundária cadastrada!")
+
+$("secondaryAccountForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  if(usuarioAtualId !== "a4a806a9-ac92-4ea2-8926-be9d3165e3e7"){
+    msg("mainMessage","Você não tem permissão para gerenciar essas contas.","error");
+    return;
+  }
+
+  const id = $("secondaryAccountId").value;
+
+  const payload = {
+    nick: $("secondaryNick").value.trim(),
+    id_jogo: $("secondaryGameId").value.trim(),
+    responsavel: $("secondaryResponsible").value.trim(),
+    observacao: $("secondaryObservation").value.trim() || null,
+    avatar_url: avatarContaAtual
+  };
+
+  if(!payload.nick || !payload.id_jogo || !payload.responsavel){
+    msg("mainMessage","Preencha nick, ID e responsável.","error");
+    return;
+  }
+
+  const result = id
+    ? await db.from("contas_secundarias").update(payload).eq("id",id)
+    : await db.from("contas_secundarias").insert(payload);
+
+  if(result.error){
+    fail(result.error);
+    return;
+  }
+
+  limparContaSecundaria();
+  await carregarContasSecundarias();
+
+  msg("mainMessage",id ? "Conta secundária atualizada!" : "Conta secundária cadastrada!");
 });
+
 function editarContaSecundaria(id){
-if(usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7")return;
-const c=contasSecundarias.find(x=>String(x.id)===String(id));if(!c)return;
-$("secondaryAccountId").value=c.id;
-$("secondaryNick").value=c.nick||"";
-$("secondaryGameId").value=c.id_jogo||"";
-$("secondaryResponsible").value=c.responsavel||"";
-$("secondaryObservation").value=c.observacao||"";
-$("secondaryFormTitle").textContent="Editar conta secundária";
-$("section-contas-secundarias").scrollIntoView({behavior:"smooth"})
+  if(usuarioAtualId !== "a4a806a9-ac92-4ea2-8926-be9d3165e3e7") return;
+
+  const c = contasSecundarias.find(x => String(x.id) === String(id));
+  if(!c) return;
+
+  $("secondaryAccountId").value = c.id;
+  $("secondaryNick").value = c.nick || "";
+  $("secondaryGameId").value = c.id_jogo || "";
+  $("secondaryResponsible").value = c.responsavel || "";
+  $("secondaryObservation").value = c.observacao || "";
+
+  avatarContaAtual = c.avatar_url || null;
+  atualizarPreviewAvatar(avatarContaAtual, c.nick || "");
+
+  $("secondaryFormTitle").textContent = "Editar conta secundária";
+  $("section-contas-secundarias").scrollIntoView({behavior:"smooth"});
 }
+
 function limparContaSecundaria(){
-$("secondaryAccountForm").reset();
-$("secondaryAccountId").value="";
-$("secondaryFormTitle").textContent="Cadastrar conta secundária"
+  $("secondaryAccountForm").reset();
+  $("secondaryAccountId").value = "";
+  $("secondaryFormTitle").textContent = "Cadastrar conta secundária";
+
+  avatarContaAtual = null;
+  atualizarPreviewAvatar(null);
+  $("secondaryLookupMessage").textContent = "";
 }
+
 async function excluirContaSecundaria(id){
-if(usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7")return;
-const c=contasSecundarias.find(x=>String(x.id)===String(id));if(!c)return;
-if(!confirm(`Excluir a conta secundária "${c.nick}"? Essa ação não poderá ser desfeita.`))return;
-const {error}=await db.from("contas_secundarias").delete().eq("id",id);
-if(error){fail(error);return}
-if(String($("secondaryAccountId").value)===String(id))limparContaSecundaria();
-await carregarContasSecundarias();
-msg("mainMessage","Conta secundária excluída.")
+  if(usuarioAtualId !== "a4a806a9-ac92-4ea2-8926-be9d3165e3e7") return;
+
+  const c = contasSecundarias.find(x => String(x.id) === String(id));
+  if(!c) return;
+
+  if(!confirm(`Excluir a conta secundária "${c.nick}"? Essa ação não poderá ser desfeita.`)) return;
+
+  const {error} = await db.from("contas_secundarias").delete().eq("id",id);
+
+  if(error){
+    fail(error);
+    return;
+  }
+
+  if(String($("secondaryAccountId").value) === String(id)){
+    limparContaSecundaria();
+  }
+
+  await carregarContasSecundarias();
+  msg("mainMessage","Conta secundária excluída.");
 }
-
-
 
 $("buscarContaBtn").addEventListener("click", async () => {
   const id = $("secondaryGameId").value.trim();
   const mensagem = $("secondaryLookupMessage");
   const botao = $("buscarContaBtn");
 
-  if (!/^\d{5,15}$/.test(id)) {
+  if(!/^\d{5,15}$/.test(id)){
     mensagem.textContent = "Digite um ID válido.";
     mensagem.style.color = "#ff5555";
     return;
@@ -828,49 +927,56 @@ $("buscarContaBtn").addEventListener("click", async () => {
   mensagem.textContent = "Consultando Free Fire...";
   mensagem.style.color = "#ccc";
 
-  try {
-const { data: { session } } = await db.auth.getSession();
+  avatarContaAtual = null;
+  atualizarPreviewAvatar(null);
 
-    if (!session) {
+  try{
+    const {data:{session}} = await db.auth.getSession();
+
+    if(!session){
       throw new Error("Sua sessão expirou. Entre novamente.");
     }
 
- const { data, error } = await db.functions.invoke(
+    const {data,error} = await db.functions.invoke(
       "buscar-nick",
-      {
-        body: { id }
-      }
+      {body:{id}}
     );
 
-  if (error) throw error;
+    if(error) throw error;
 
-if (!data || !data.nickname) {
-  console.log("Resposta completa da API:", data);
+    if(!data || !data.nickname){
+      console.log("Resposta completa da API:",data);
 
-  throw new Error(
-    data?.erro
-      ? data.erro + " | Retorno: " + JSON.stringify(data.resposta_api)
-      : "Resposta inesperada: " + JSON.stringify(data)
-  );
-}
+      throw new Error(
+        data?.erro
+          ? data.erro + " | Retorno: " + JSON.stringify(data.resposta_api)
+          : "Resposta inesperada: " + JSON.stringify(data)
+      );
+    }
+
     $("secondaryNick").value = data.nickname;
 
-    mensagem.textContent = "Nick encontrado: " + data.nickname;
+    avatarContaAtual = data.avatar || null;
+    atualizarPreviewAvatar(avatarContaAtual,data.nickname);
+
+    mensagem.textContent = avatarContaAtual
+      ? "Nick e avatar encontrados: " + data.nickname
+      : "Nick encontrado, mas a API não retornou avatar.";
+
     mensagem.style.color = "#22c55e";
 
-  } catch (error) {
-    console.error("Erro na busca:", error);
+  }catch(error){
+    console.error("Erro na busca:",error);
 
-    mensagem.textContent =
-      error.message || "Não foi possível consultar a conta.";
-
+    mensagem.textContent = error.message || "Não foi possível consultar a conta.";
     mensagem.style.color = "#ff5555";
 
-  } finally {
+  }finally{
     botao.disabled = false;
     botao.textContent = "BUSCAR CONTA";
   }
 });
+
 
 /* INICIAR */
 verificarSessao();
