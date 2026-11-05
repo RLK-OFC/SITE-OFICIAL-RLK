@@ -694,30 +694,57 @@ section {
   font-weight:900;
 }
 
-/* NOTÍCIAS */
+/* NOTÍCIAS EM DESTAQUE */
 
-.news-card {
-  background:linear-gradient(145deg,#171a22,#101217);
-  border:1px solid var(--line);
-  padding:18px;
-  border-radius:8px;
-  transition:.3s;
-  overflow:hidden;
+#noticias {
+  max-width:1320px;
+  padding-top:75px;
+  padding-bottom:75px;
 }
 
-.news-card:hover {
+.news-list {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:18px;
+}
+
+.news-card {
+  width:100%;
+  text-align:left;
+  color:var(--text);
+  font:inherit;
+  cursor:pointer;
+  background:linear-gradient(145deg,#171a22,#101217);
+  border:1px solid var(--line);
+  padding:0;
+  border-radius:9px;
+  transition:.25s;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+.news-card:hover,
+.news-card:focus-visible {
   transform:translateY(-5px);
   border-color:var(--red);
+  outline:none;
+  box-shadow:0 12px 30px rgba(0,0,0,.28);
 }
 
 .news-card img {
   width:100%;
-  height:210px;
+  height:190px;
   object-fit:cover;
-  border-radius:5px;
-  margin-bottom:17px;
   display:block;
   background:#08090c;
+}
+
+.news-card-body {
+  padding:19px;
+  display:flex;
+  flex:1;
+  flex-direction:column;
 }
 
 .news-card h3 {
@@ -728,19 +755,123 @@ section {
 .news-card p {
   color:var(--muted);
   font-size:13px;
-  line-height:1.8;
-  margin-top:12px;
+  line-height:1.75;
+  margin-top:10px;
   white-space:pre-line;
+  display:-webkit-box;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
 }
 
 .news-card small {
   display:block;
-  margin-top:17px;
-  padding-top:12px;
-  border-top:1px solid var(--line);
+  margin-top:auto;
+  padding-top:14px;
   color:#858b98;
   font-size:11px;
 }
+
+.news-featured {
+  grid-column:1/-1;
+  display:grid;
+  grid-template-columns:1.15fr 1fr;
+  min-height:340px;
+  border-color:#61202a;
+  background:linear-gradient(110deg,#191c25,#0e1015);
+}
+
+.news-featured img {
+  height:100%;
+  min-height:340px;
+  max-height:440px;
+}
+
+.news-featured .news-card-body {
+  padding:clamp(22px,4vw,42px);
+  justify-content:center;
+}
+
+.news-featured h3 {
+  font-size:clamp(23px,3vw,34px);
+  line-height:1.25;
+}
+
+.news-featured p {
+  font-size:14px;
+  -webkit-line-clamp:6;
+}
+
+.news-kicker {
+  color:#ff596b;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:2px;
+  margin-bottom:12px;
+}
+
+.news-read-more {
+  display:inline-block;
+  color:#ff596b;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:1px;
+  margin-top:16px;
+}
+
+/* LEITOR DE NOTÍCIA */
+
+.news-modal[hidden] { display:none; }
+
+.news-modal {
+  position:fixed;
+  inset:0;
+  z-index:300;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(0,0,0,.86);
+  backdrop-filter:blur(8px);
+}
+
+.news-modal-panel {
+  width:min(850px,100%);
+  max-height:90vh;
+  overflow:auto;
+  position:relative;
+  background:#111319;
+  border:1px solid #61202a;
+  border-radius:10px;
+  box-shadow:0 20px 70px rgba(0,0,0,.55);
+}
+
+.news-modal-close {
+  position:sticky;
+  top:12px;
+  float:right;
+  z-index:2;
+  margin:12px 12px -48px 0;
+  width:36px;
+  height:36px;
+  border:1px solid #555;
+  border-radius:50%;
+  color:white;
+  background:rgba(8,9,12,.9);
+  font-size:22px;
+}
+
+.news-modal-image {
+  width:100%;
+  max-height:420px;
+  object-fit:cover;
+  display:block;
+}
+
+.news-modal-content { padding:30px; }
+.news-modal-content h2 { font-size:clamp(23px,4vw,34px); line-height:1.25; }
+.news-modal-content p { color:#c4c7cf; white-space:pre-line; line-height:1.9; margin-top:20px; }
+.news-modal-date { color:#858b98; font-size:11px; display:block; margin-top:12px; }
 
 /* RECRUTAMENTO */
 
@@ -826,8 +957,9 @@ footer a:hover {
   .line-list,
   .news-list,
   .champ-list {
-    grid-template-columns:repeat(2,1fr);
+    grid-template-columns:repeat(2,minmax(0,1fr));
   }
+  .news-featured { grid-template-columns:1fr 1fr; }
 }
 
 @media(max-width:750px) {
@@ -914,6 +1046,11 @@ footer a:hover {
     grid-template-columns:1fr;
   }
 
+  .news-featured { grid-template-columns:1fr; }
+  .news-featured img { min-height:0; height:220px; }
+  .news-featured .news-card-body { padding:22px; }
+  .news-modal-content { padding:22px; }
+
   .hero {
     min-height:480px;
   }
@@ -989,6 +1126,7 @@ footer a:hover {
       <a href="#lines">LINES</a>
       <a href="#resultados">RESULTADOS</a>
       <a href="#campeonatos">CAMPEONATOS</a>
+      <a href="#noticias">NOTÍCIAS</a>
       <a href="#recrutamento" class="nav-btn">RECRUTAMENTO</a>
       <a href="sobre.html">SOBRE A RLK</a>
     </nav>
@@ -1049,6 +1187,18 @@ footer a:hover {
         HONRA, UNIÃO E GUERRA.
       </p>
     </div>
+  </div>
+</section>
+
+<section id="noticias">
+  <div class="section-title">
+    <small>COMUNICADOS</small>
+    <h2>ÚLTIMAS NOTÍCIAS</h2>
+    <p>Fique por dentro das novidades da RLK.</p>
+  </div>
+
+  <div class="news-list" id="listaAvisos">
+    <div class="empty">Carregando notícias...</div>
   </div>
 </section>
 
@@ -1128,17 +1278,7 @@ footer a:hover {
   </div>
 </section>
 
-<section id="noticias">
-  <div class="section-title">
-    <small>COMUNICADOS</small>
-    <h2>ÚLTIMAS NOTÍCIAS</h2>
-    <p>Fique por dentro das novidades da RLK.</p>
-  </div>
 
-  <div class="news-list" id="listaAvisos">
-    <div class="empty">Carregando notícias...</div>
-  </div>
-</section>
 
 <section id="recrutamento">
   <div class="section-title">
@@ -1172,6 +1312,13 @@ footer a:hover {
     </a>
   </div>
 </section>
+
+<div class="news-modal" id="newsModal" hidden aria-hidden="true">
+  <div class="news-modal-panel" role="dialog" aria-modal="true" aria-labelledby="newsModalTitle">
+    <button class="news-modal-close" id="newsModalClose" type="button" aria-label="Fechar notícia">×</button>
+    <div id="newsModalContent"></div>
+  </div>
+</div>
 
 </main>
 
@@ -1461,6 +1608,46 @@ async function carregarCampeonatos() {
 
 /* NOTÍCIAS */
 
+let noticiasPublicadas = [];
+
+function abrirNoticia(indice) {
+  const noticia = noticiasPublicadas[indice];
+  if (!noticia) return;
+
+  const modal = document.getElementById("newsModal");
+  const conteudo = document.getElementById("newsModalContent");
+
+  conteudo.innerHTML = `
+    ${noticia.imagem_url ? `<img class="news-modal-image" src="${esc(noticia.imagem_url)}" alt="${esc(noticia.titulo)}">` : ""}
+    <div class="news-modal-content">
+      <span class="news-kicker">NOTÍCIA OFICIAL • RLK</span>
+      <h2 id="newsModalTitle">${esc(noticia.titulo)}</h2>
+      <small class="news-modal-date">${noticia.criado_em ? new Date(noticia.criado_em).toLocaleDateString("pt-BR") : ""}</small>
+      <p>${esc(noticia.conteudo)}</p>
+    </div>
+  `;
+
+  modal.hidden = false;
+  modal.setAttribute("aria-hidden","false");
+  document.body.style.overflow = "hidden";
+  document.getElementById("newsModalClose").focus();
+}
+
+function fecharNoticia() {
+  const modal = document.getElementById("newsModal");
+  modal.hidden = true;
+  modal.setAttribute("aria-hidden","true");
+  document.body.style.overflow = "";
+}
+
+document.getElementById("newsModalClose").addEventListener("click",fecharNoticia);
+document.getElementById("newsModal").addEventListener("click",event => {
+  if (event.target.id === "newsModal") fecharNoticia();
+});
+document.addEventListener("keydown",event => {
+  if (event.key === "Escape") fecharNoticia();
+});
+
 async function carregarAvisos() {
   const area = document.getElementById("listaAvisos");
 
@@ -1481,27 +1668,26 @@ async function carregarAvisos() {
     return;
   }
 
-  area.innerHTML = data.map(a => `
-    <div class="news-card">
-
+  noticiasPublicadas = data;
+  area.innerHTML = data.map((a,index) => `
+    <button type="button" class="news-card ${index === 0 ? "news-featured" : ""}" data-news-index="${index}" aria-label="Abrir notícia: ${esc(a.titulo)}">
       ${a.imagem_url ? `
-        <img
-          src="${esc(a.imagem_url)}"
-          alt="${esc(a.titulo)}"
-          loading="lazy"
-          onerror="this.style.display='none'; console.error('Não foi possível carregar a imagem:',this.src);"
-        >
+        <img src="${esc(a.imagem_url)}" alt="${esc(a.titulo)}" loading="lazy"
+          onerror="this.style.display='none'; console.error('Não foi possível carregar a imagem:',this.src);">
       ` : ""}
-
-      <h3>${esc(a.titulo)}</h3>
-
-      <p>${esc(a.conteudo)}</p>
-
-      <small>
-        ${a.criado_em ? new Date(a.criado_em).toLocaleDateString("pt-BR") : ""}
-      </small>
-    </div>
+      <span class="news-card-body">
+        ${index === 0 ? '<span class="news-kicker">DESTAQUE RLK</span>' : ''}
+        <h3>${esc(a.titulo)}</h3>
+        <p>${esc(a.conteudo)}</p>
+        <small>${a.criado_em ? new Date(a.criado_em).toLocaleDateString("pt-BR") : ""}</small>
+        <span class="news-read-more">LER NOTÍCIA COMPLETA →</span>
+      </span>
+    </button>
   `).join("");
+
+  area.querySelectorAll("[data-news-index]").forEach(card => {
+    card.addEventListener("click",() => abrirNoticia(Number(card.dataset.newsIndex)));
+  });
 
   ativarAnimacoes();
 }
