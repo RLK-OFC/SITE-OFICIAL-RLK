@@ -843,9 +843,15 @@ const { data: { session } } = await db.auth.getSession();
     );
 
     if (error) throw error;
-    if (!data || !data.nickname) {
-      throw new Error(data?.error || "Nick não encontrado.");
-    }
+if (!data || !data.sucesso || !data.nickname) {
+  console.log("Resposta completa da API:", data);
+
+  throw new Error(
+    data?.erro
+      ? data.erro + " | Retorno: " + JSON.stringify(data.resposta_api)
+      : "Nick não encontrado."
+  );
+}
 
     $("secondaryNick").value = data.nickname;
 
