@@ -1123,6 +1123,7 @@ footer a:hover {
     <nav id="menuPrincipal">
       <a href="#inicio">INÍCIO</a>
       <a href="#membros">MEMBROS</a>
+      <a href="#contas-secundarias">CONTAS SECUNDÁRIAS</a>
       <a href="#lines">LINES</a>
       <a href="#resultados">RESULTADOS</a>
       <a href="#campeonatos">CAMPEONATOS</a>
@@ -1239,6 +1240,18 @@ footer a:hover {
 
   <div class="player-list" id="listaMembros">
     <div class="empty">Carregando membros...</div>
+  </div>
+</section>
+
+<section id="contas-secundarias">
+  <div class="section-title">
+    <small>ACESSOS ALTERNATIVOS</small>
+    <h2>CONTAS SECUNDÁRIAS</h2>
+    <p>Contas adicionais utilizadas pelos integrantes da RLK.</p>
+  </div>
+
+  <div class="player-list" id="listaContasSecundarias">
+    <div class="empty">Carregando contas secundárias...</div>
   </div>
 </section>
 
@@ -1445,6 +1458,40 @@ async function carregarMembros() {
       ${m.id_jogo ? `<div class="player-id">ID: ${esc(m.id_jogo)}</div>` : ""}
 
       <span class="role">${esc(m.funcao || "MEMBRO")}</span>
+    </div>
+  `).join("");
+
+  ativarAnimacoes();
+}
+
+/* CONTAS SECUNDÁRIAS */
+
+async function carregarContasSecundarias() {
+  const area = document.getElementById("listaContasSecundarias");
+
+  const {data,error} = await db
+    .from("contas_secundarias")
+    .select("id,nick,id_jogo,responsavel,observacao")
+    .order("nick");
+
+  if (error) {
+    console.error("Erro ao carregar contas secundárias:",error);
+    area.innerHTML = '<div class="empty">Não foi possível carregar as contas secundárias.</div>';
+    return;
+  }
+
+  if (!data || !data.length) {
+    area.innerHTML = '<div class="empty">Nenhuma conta secundária cadastrada ainda.</div>';
+    return;
+  }
+
+  area.innerHTML = data.map(conta => `
+    <div class="player">
+      <h3>${esc(conta.nick || "Nick não informado")}</h3>
+      <div class="player-id">ID: ${esc(conta.id_jogo || "Não informado")}</div>
+      <small>👤 Responsável: ${esc(conta.responsavel || "Não informado")}</small>
+      ${conta.observacao ? `<div class="player-name">${esc(conta.observacao)}</div>` : ""}
+      <span class="role">CONTA SECUNDÁRIA</span>
     </div>
   `).join("");
 
@@ -1697,6 +1744,7 @@ async function carregarAvisos() {
 async function iniciarSite() {
   await Promise.all([
     carregarMembros(),
+    carregarContasSecundarias(),
     carregarLines(),
     carregarResultados(),
     carregarCampeonatos(),
