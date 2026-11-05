@@ -810,43 +810,58 @@ await carregarContasSecundarias();
 msg("mainMessage","Conta secundária excluída.")
 }
 
+
 $("buscarContaBtn").addEventListener("click", async () => {
   const id = $("secondaryGameId").value.trim();
   const mensagem = $("secondaryLookupMessage");
   const botao = $("buscarContaBtn");
 
   if (!/^\d{5,15}$/.test(id)) {
-    mensagem.textContent = "Digite um ID válido (5 a 15 números).";
+    mensagem.textContent = "Digite um ID válido, usando apenas números.";
     mensagem.style.color = "#ff5555";
     return;
   }
 
   botao.disabled = true;
   botao.textContent = "BUSCANDO...";
-  mensagem.textContent = "Consultando conta no Free Fire...";
+  mensagem.textContent = "Consultando conta...";
   mensagem.style.color = "#ccc";
 
   try {
-    const url = `https://freefirefwx-beta.squareweb.app/api/nick?id=${encodeURIComponent(id)}&region=br`;
+    const url = `https://freefirefwx-beta.squareweb.app/api/nick?id=${encodeURIComponent(id)}`;
 
     const resposta = await fetch(url);
-    const dados = await resposta.json();
 
-    if (!resposta.ok || !dados.player_nickname) {
-      throw new Error("Conta não encontrada.");
+    let dados;
+    try {
+      dados = await resposta.json();
+    } catch {
+      throw new Error("A API retornou uma resposta inválida.");
+    }
+
+    if (!resposta.ok) {
+      if (resposta.status === 404) {
+        throw new Error("Jogador não encontrado. Confira o ID.");
+      }
+      throw new Error(`Erro da API: HTTP ${resposta.status}`);
+    }
+
+    if (!dados.player_nickname) {
+      throw new Error("A API não retornou o nickname.");
     }
 
     $("secondaryNick").value = dados.player_nickname;
 
     mensagem.textContent =
-      "Nick encontrado: " + dados.player_nickname;
+      `Nick encontrado: ${dados.player_nickname}`;
     mensagem.style.color = "#22c55e";
 
   } catch (error) {
-    console.error("Erro na consulta do Free Fire:", error);
+    console.error("Erro ao consultar Free Fire:", error);
 
-    mensagem.textContent =
-      "Não foi possível consultar. Verifique o ID ou tente novamente.";
+    mensagem.textContent = error.message.includes("Failed to fetch")
+      ? "Falha de conexão ou bloqueio CORS da API."
+      : error.message;
 
     mensagem.style.color = "#ff5555";
 
