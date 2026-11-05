@@ -809,7 +809,33 @@ if(String($("secondaryAccountId").value)===String(id))limparContaSecundaria();
 await carregarContasSecundarias();
 msg("mainMessage","Conta secundária excluída.")
 }
+$("buscarContaBtn").addEventListener("click", async () => {
+  const id = $("secondaryGameId").value.trim();
+  const mensagem = $("secondaryLookupMessage");
+  const botao = $("buscarContaBtn");
 
+  if (!id) {
+    mensagem.textContent = "Digite o ID do Free Fire.";
+    mensagem.style.color = "#ff5555";
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "BUSCANDO...";
+  mensagem.textContent = "Consultando conta...";
+  mensagem.style.color = "#ccc";
+
+  try {
+    mensagem.textContent = "API de consulta ainda não configurada.";
+    mensagem.style.color = "#ff5555";
+  } catch (error) {
+    mensagem.textContent = "Não foi possível consultar a conta.";
+    mensagem.style.color = "#ff5555";
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "BUSCAR CONTA";
+  }
+});
 /* INICIAR */
 verificarSessao();
 </script>
