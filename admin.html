@@ -842,17 +842,17 @@ const { data: { session } } = await db.auth.getSession();
       }
     );
 
-    if (error) throw error;
-if (!data || !data.sucesso || !data.nickname) {
+  if (error) throw error;
+
+if (!data || !data.nickname) {
   console.log("Resposta completa da API:", data);
 
   throw new Error(
     data?.erro
       ? data.erro + " | Retorno: " + JSON.stringify(data.resposta_api)
-      : "Nick não encontrado."
+      : "Resposta inesperada: " + JSON.stringify(data)
   );
 }
-
     $("secondaryNick").value = data.nickname;
 
     mensagem.textContent = "Nick encontrado: " + data.nickname;
