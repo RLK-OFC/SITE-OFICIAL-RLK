@@ -829,13 +829,13 @@ $("buscarContaBtn").addEventListener("click", async () => {
   mensagem.style.color = "#ccc";
 
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+const { data: { session } } = await db.auth.getSession();
 
     if (!session) {
       throw new Error("Sua sessão expirou. Entre novamente.");
     }
 
-    const { data, error } = await supabase.functions.invoke(
+ const { data, error } = await db.functions.invoke(
       "buscar-nick",
       {
         body: { id }
