@@ -390,6 +390,34 @@ $("section-"+nome).classList.add("active");if(button)button.classList.add("activ
 async function carregarTudo(){
 await carregarMembros();await carregarLines();await carregarMembros();
 await carregarResultados();await carregarCampeonatos();await carregarNoticias();
+  $("buscarContaBtn").addEventListener("click", async () => {
+  const id = $("secondaryGameId").value.trim();
+  const mensagem = $("secondaryLookupMessage");
+  const botao = $("buscarContaBtn");
+
+  if (!id) {
+    mensagem.textContent = "Digite o ID do Free Fire.";
+    mensagem.style.color = "#ff5555";
+    return;
+  }
+
+  botao.disabled = true;
+  botao.textContent = "BUSCANDO...";
+  mensagem.textContent = "Consultando conta...";
+  mensagem.style.color = "#ccc";
+
+  try {
+    // A consulta à API será configurada aqui.
+    mensagem.textContent = "Ainda falta configurar a API de consulta.";
+    mensagem.style.color = "#ff5555";
+  } catch (error) {
+    mensagem.textContent = "Não foi possível consultar a conta.";
+    mensagem.style.color = "#ff5555";
+  } finally {
+    botao.disabled = false;
+    botao.textContent = "BUSCAR CONTA";
+  }
+});
 if(usuarioAtualId==="a4a806a9-ac92-4ea2-8926-be9d3165e3e7")await carregarContasSecundarias()
 }
 
