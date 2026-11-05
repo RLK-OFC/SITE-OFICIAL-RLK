@@ -269,8 +269,19 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 <form id="secondaryAccountForm">
 <input type="hidden" id="secondaryAccountId">
 <div class="grid">
-<div class="field"><label>Nick da conta *</label><input id="secondaryNick" maxlength="80" required></div>
-<div class="field"><label>ID do Free Fire *</label><input id="secondaryGameId" inputmode="numeric" maxlength="30" required></div>
+<div class="field">
+  <label>Nick da conta *</label>
+  <input id="secondaryNick" maxlength="80" required>
+</div>
+
+<div class="field">
+  <label>ID do Free Fire *</label>
+  <div style="display:flex;gap:8px;align-items:center">
+    <input id="secondaryGameId" inputmode="numeric" maxlength="30" required style="flex:1;min-width:0">
+    <button type="button" id="buscarContaBtn" class="btn">BUSCAR CONTA</button>
+  </div>
+  <small id="secondaryLookupMessage"></small>
+</div>
 <div class="field full"><label>Quem joga nesta conta? *</label><input id="secondaryResponsible" maxlength="100" required placeholder="Nick ou nome do membro responsável"></div>
 <div class="field full"><label>Observação (opcional)</label><textarea id="secondaryObservation" maxlength="500" placeholder="Ex.: conta usada para jogar em outra line."></textarea></div>
 </div>
