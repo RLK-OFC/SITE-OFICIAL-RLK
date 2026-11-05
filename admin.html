@@ -811,57 +811,52 @@ msg("mainMessage","Conta secundária excluída.")
 }
 
 
+
 $("buscarContaBtn").addEventListener("click", async () => {
   const id = $("secondaryGameId").value.trim();
   const mensagem = $("secondaryLookupMessage");
   const botao = $("buscarContaBtn");
 
   if (!/^\d{5,15}$/.test(id)) {
-    mensagem.textContent = "Digite um ID válido, usando apenas números.";
+    mensagem.textContent = "Digite um ID válido.";
     mensagem.style.color = "#ff5555";
     return;
   }
 
   botao.disabled = true;
   botao.textContent = "BUSCANDO...";
-  mensagem.textContent = "Consultando conta...";
+  mensagem.textContent = "Consultando Free Fire...";
   mensagem.style.color = "#ccc";
 
   try {
-    const url = `https://freefirefwx-beta.squareweb.app/api/nick?id=${encodeURIComponent(id)}`;
+    const { data: { session } } = await supabase.auth.getSession();
 
-    const resposta = await fetch(url);
-
-    let dados;
-    try {
-      dados = await resposta.json();
-    } catch {
-      throw new Error("A API retornou uma resposta inválida.");
+    if (!session) {
+      throw new Error("Sua sessão expirou. Entre novamente.");
     }
 
-    if (!resposta.ok) {
-      if (resposta.status === 404) {
-        throw new Error("Jogador não encontrado. Confira o ID.");
+    const { data, error } = await supabase.functions.invoke(
+      "buscar-nick",
+      {
+        body: { id }
       }
-      throw new Error(`Erro da API: HTTP ${resposta.status}`);
+    );
+
+    if (error) throw error;
+    if (!data || !data.nickname) {
+      throw new Error(data?.error || "Nick não encontrado.");
     }
 
-    if (!dados.player_nickname) {
-      throw new Error("A API não retornou o nickname.");
-    }
+    $("secondaryNick").value = data.nickname;
 
-    $("secondaryNick").value = dados.player_nickname;
-
-    mensagem.textContent =
-      `Nick encontrado: ${dados.player_nickname}`;
+    mensagem.textContent = "Nick encontrado: " + data.nickname;
     mensagem.style.color = "#22c55e";
 
   } catch (error) {
-    console.error("Erro ao consultar Free Fire:", error);
+    console.error("Erro na busca:", error);
 
-    mensagem.textContent = error.message.includes("Failed to fetch")
-      ? "Falha de conexão ou bloqueio CORS da API."
-      : error.message;
+    mensagem.textContent =
+      error.message || "Não foi possível consultar a conta.";
 
     mensagem.style.color = "#ff5555";
 
