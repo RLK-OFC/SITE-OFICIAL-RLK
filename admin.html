@@ -74,6 +74,9 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 .score-row small{display:block;color:var(--muted);font-size:11px;margin-top:4px}
 .result-date{font-size:18px;font-weight:900;color:white}
 .score-number{font-size:20px;font-weight:900;color:#f87171}
+
+.secondary-account-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.secondary-account-meta span{background:#242832;border:1px solid #383d49;border-radius:7px;padding:6px 9px;font-size:12px;color:#d4d4d8}
 @media(max-width:650px){.grid{grid-template-columns:1fr}.player-row,.score-row{grid-template-columns:1fr}.panel{padding:16px}.login-box{margin:25px auto}}
 </style>
 </head>
@@ -122,6 +125,7 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 <button class="tab" onclick="abrirAba('resultados',this)">RESULTADOS</button>
 <button class="tab" onclick="abrirAba('campeonatos',this)">CAMPEONATOS</button>
 <button class="tab" onclick="abrirAba('noticias',this)">NOTÍCIAS</button>
+<button class="tab hidden" id="secondaryAccountsTab" onclick="abrirAba('contas-secundarias',this)">CONTAS SECUNDÁRIAS</button>
 </nav>
 
 <!-- MEMBROS -->
@@ -256,6 +260,34 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 </div>
 <div class="panel"><h2>Notícias cadastradas</h2><div id="newsList" class="cards"></div></div>
 </section>
+
+<!-- CONTAS SECUNDÁRIAS -->
+<section id="section-contas-secundarias" class="section">
+<div class="panel">
+<h2 class="form-title" id="secondaryFormTitle">Cadastrar conta secundária</h2>
+<p class="muted">Cadastre cada conta extra e identifique o membro responsável por ela.</p>
+<form id="secondaryAccountForm">
+<input type="hidden" id="secondaryAccountId">
+<div class="grid">
+<div class="field"><label>Nick da conta *</label><input id="secondaryNick" maxlength="80" required></div>
+<div class="field"><label>ID do Free Fire *</label><input id="secondaryGameId" inputmode="numeric" maxlength="30" required></div>
+<div class="field full"><label>Quem joga nesta conta? *</label><input id="secondaryResponsible" maxlength="100" required placeholder="Nick ou nome do membro responsável"></div>
+<div class="field full"><label>Observação (opcional)</label><textarea id="secondaryObservation" maxlength="500" placeholder="Ex.: conta usada para jogar em outra line."></textarea></div>
+</div>
+<div class="actions">
+<button class="btn" type="submit">SALVAR CONTA</button>
+<button class="btn btn-secondary" type="button" onclick="limparContaSecundaria()">LIMPAR</button>
+</div>
+</form>
+</div>
+<div class="panel">
+<div class="top-actions">
+<h2 style="margin:0">Contas cadastradas</h2>
+<span class="small" id="secondaryAccountCount"></span>
+</div>
+<div id="secondaryAccountsList" class="cards"><div class="empty">Carregando contas...</div></div>
+</div>
+</section>
 </section>
 </main>
 
@@ -289,6 +321,7 @@ const ADMINS=["a4a806a9-ac92-4ea2-8926-be9d3165e3e7","8a5349b9-2fb4-43c1-b2c3-ed
 
 let members=[],lines=[],vinculosLines=[],jogadoresLine=[],lineAtualId=null;
 let warsResults=[],championships=[],news=[];
+let usuarioAtualId=null,contasSecundarias=[];
 
 const $=id=>document.getElementById(id);
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
@@ -302,7 +335,9 @@ function bool(id){return $(id).value==="true"}
 function mostrarLogin(){$("loginSection").classList.remove("hidden");$("resetSection").classList.add("hidden");$("adminPanel").classList.add("hidden");$("logoutBtn").classList.add("hidden")}
 function mostrarPainel(){$("loginSection").classList.add("hidden");$("resetSection").classList.add("hidden");$("adminPanel").classList.remove("hidden");$("logoutBtn").classList.remove("hidden")}
 async function validarAdmin(user){
-if(!user||!ADMINS.includes(user.id)){await db.auth.signOut();mostrarLogin();msg("loginMessage","Usuário sem autorização para acessar o painel.","error");return}
+if(!user||!ADMINS.includes(user.id)){await db.auth.signOut();usuarioAtualId=null;mostrarLogin();msg("loginMessage","Usuário sem autorização para acessar o painel.","error");return}
+usuarioAtualId=user.id;
+$("secondaryAccountsTab").classList.toggle("hidden",usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7");
 mostrarPainel();await carregarTudo()
 }
 async function verificarSessao(){const {data,error}=await db.auth.getSession();if(error){console.error(error);return}if(data.session)await validarAdmin(data.session.user);else mostrarLogin()}
@@ -343,7 +378,8 @@ $("section-"+nome).classList.add("active");if(button)button.classList.add("activ
 /* CARREGAMENTO */
 async function carregarTudo(){
 await carregarMembros();await carregarLines();await carregarMembros();
-await carregarResultados();await carregarCampeonatos();await carregarNoticias()
+await carregarResultados();await carregarCampeonatos();await carregarNoticias();
+if(usuarioAtualId==="a4a806a9-ac92-4ea2-8926-be9d3165e3e7")await carregarContasSecundarias()
 }
 
 /* MEMBROS */
@@ -687,6 +723,79 @@ if(!confirm("Excluir esta notícia?"))return;
 const {error}=await db.from("avisos_rlk").delete().eq("id",id);
 if(error){fail(error);return}
 await carregarNoticias();msg("mainMessage","Notícia excluída.")
+}
+
+/* CONTAS SECUNDÁRIAS */
+async function carregarContasSecundarias(){
+if(usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7")return;
+const {data,error}=await db.from("contas_secundarias").select("*").order("criado_em",{ascending:false});
+if(error){fail(error);$("secondaryAccountsList").innerHTML='<div class="empty">Não foi possível carregar as contas secundárias.</div>';return}
+contasSecundarias=data||[];
+renderizarContasSecundarias()
+}
+function renderizarContasSecundarias(){
+$("secondaryAccountCount").textContent=contasSecundarias.length+" conta(s)";
+if(!contasSecundarias.length){
+$("secondaryAccountsList").innerHTML='<div class="empty">Nenhuma conta secundária cadastrada.</div>';return
+}
+$("secondaryAccountsList").innerHTML=contasSecundarias.map(c=>`
+<article class="item">
+<h3>${esc(c.nick)}</h3>
+<div class="secondary-account-meta">
+<span>ID: <strong>${esc(c.id_jogo)}</strong></span>
+<span>Responsável: <strong>${esc(c.responsavel)}</strong></span>
+</div>
+${c.observacao?`<p>${esc(c.observacao)}</p>`:""}
+<div class="actions">
+<button class="btn btn-small" onclick="editarContaSecundaria('${c.id}')">EDITAR</button>
+<button class="btn btn-danger btn-small" onclick="excluirContaSecundaria('${c.id}')">EXCLUIR</button>
+</div>
+</article>`).join("")
+}
+$("secondaryAccountForm").addEventListener("submit",async e=>{
+e.preventDefault();
+if(usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7"){msg("mainMessage","Você não tem permissão para gerenciar essas contas.","error");return}
+const id=$("secondaryAccountId").value;
+const payload={
+nick:$("secondaryNick").value.trim(),
+id_jogo:$("secondaryGameId").value.trim(),
+responsavel:$("secondaryResponsible").value.trim(),
+observacao:$("secondaryObservation").value.trim()||null
+};
+if(!payload.nick||!payload.id_jogo||!payload.responsavel){msg("mainMessage","Preencha nick, ID e responsável.","error");return}
+const result=id
+?await db.from("contas_secundarias").update(payload).eq("id",id)
+:await db.from("contas_secundarias").insert(payload);
+if(result.error){fail(result.error);return}
+limparContaSecundaria();
+await carregarContasSecundarias();
+msg("mainMessage",id?"Conta secundária atualizada!":"Conta secundária cadastrada!")
+});
+function editarContaSecundaria(id){
+if(usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7")return;
+const c=contasSecundarias.find(x=>String(x.id)===String(id));if(!c)return;
+$("secondaryAccountId").value=c.id;
+$("secondaryNick").value=c.nick||"";
+$("secondaryGameId").value=c.id_jogo||"";
+$("secondaryResponsible").value=c.responsavel||"";
+$("secondaryObservation").value=c.observacao||"";
+$("secondaryFormTitle").textContent="Editar conta secundária";
+$("section-contas-secundarias").scrollIntoView({behavior:"smooth"})
+}
+function limparContaSecundaria(){
+$("secondaryAccountForm").reset();
+$("secondaryAccountId").value="";
+$("secondaryFormTitle").textContent="Cadastrar conta secundária"
+}
+async function excluirContaSecundaria(id){
+if(usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7")return;
+const c=contasSecundarias.find(x=>String(x.id)===String(id));if(!c)return;
+if(!confirm(`Excluir a conta secundária "${c.nick}"? Essa ação não poderá ser desfeita.`))return;
+const {error}=await db.from("contas_secundarias").delete().eq("id",id);
+if(error){fail(error);return}
+if(String($("secondaryAccountId").value)===String(id))limparContaSecundaria();
+await carregarContasSecundarias();
+msg("mainMessage","Conta secundária excluída.")
 }
 
 /* INICIAR */
