@@ -128,6 +128,7 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 <button class="tab" onclick="abrirAba('resultados',this)">RESULTADOS</button>
 <button class="tab" onclick="abrirAba('campeonatos',this)">CAMPEONATOS</button>
 <button class="tab" onclick="abrirAba('noticias',this)">NOTÍCIAS</button>
+<button class="tab" onclick="abrirAba('advertencias',this)">ADVERTÊNCIAS</button>
 <button class="tab hidden" id="secondaryAccountsTab" onclick="abrirAba('contas-secundarias',this)">CONTAS SECUNDÁRIAS</button>
 </nav>
 
@@ -277,6 +278,50 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 <div class="panel"><h2>Notícias cadastradas</h2><div id="newsList" class="cards"></div></div>
 </section>
 
+
+<!-- ADVERTÊNCIAS -->
+<section id="section-advertencias" class="section">
+<div class="panel">
+<h2 class="form-title" id="warningFormTitle">Registrar advertência</h2>
+<p class="muted">Registre o motivo e mantenha o histórico de cada jogador. A terceira advertência fica destacada para revisão de remoção da guilda.</p>
+<form id="warningForm">
+<input type="hidden" id="warningId">
+<div class="grid">
+<div class="field"><label>Nick do jogador *</label><input id="warningNick" maxlength="80" required placeholder="Nick atual no Free Fire"></div>
+<div class="field"><label>Line</label><select id="warningLine"><option value="">Sem line / não definida</option></select></div>
+<div class="field"><label>Motivo *</label>
+<select id="warningReason" required>
+<option value="">Selecione o motivo</option>
+<option>Não respondeu à convocação da guerra</option>
+<option>Confirmou presença e não compareceu</option>
+<option>Ausência sem aviso</option>
+<option>Descumprimento de regra da guilda</option>
+<option>Desrespeito a membro ou liderança</option>
+<option>Outro</option>
+</select></div>
+<div class="field"><label>Data da ocorrência *</label><input id="warningDate" type="date" required></div>
+<div class="field full"><label>Descrição / detalhes do ocorrido</label><textarea id="warningDescription" maxlength="1000" placeholder="Explique o que aconteceu, incluindo contexto ou justificativa apresentada."></textarea></div>
+</div>
+<div class="actions">
+<button class="btn" type="submit">SALVAR ADVERTÊNCIA</button>
+<button class="btn btn-secondary" type="button" onclick="limparAdvertencia()">LIMPAR</button>
+</div>
+<p class="small">O número da advertência é calculado automaticamente pelo histórico do nick: 1ª, 2ª ou 3ª.</p>
+<div id="warningFormMessage" class="message"></div>
+</form>
+</div>
+<div class="panel">
+<div class="top-actions">
+<h2 style="margin:0">Histórico de advertências</h2>
+<span class="small" id="warningCount"></span>
+</div>
+<div class="grid">
+<div class="field"><label>Buscar por nick</label><input id="warningSearch" placeholder="Digite o nick..." oninput="renderizarAdvertencias()"></div>
+<div class="field"><label>Filtrar por line</label><select id="warningLineFilter" onchange="renderizarAdvertencias()"><option value="">Todas as lines</option></select></div>
+</div>
+<div id="warningsList" class="cards"><div class="empty">Carregando advertências...</div></div>
+</div>
+</section>
 
 <!-- CONTAS SECUNDÁRIAS: acesso exclusivo ao administrador principal -->
 <section id="section-contas-secundarias" class="section">
@@ -453,7 +498,8 @@ async function carregarTudo(){
   const tarefas=[
     carregarResultados(),
     carregarCampeonatos(),
-    carregarNoticias()
+    carregarNoticias(),
+    carregarAdvertencias()
   ];
 
   if(usuarioAtualId==="a4a806a9-ac92-4ea2-8926-be9d3165e3e7"){
@@ -590,7 +636,7 @@ const {data,error}=await db.from("lines_rlk").select("*").order("nome");
 if(error){fail(error);return}
 const {data:rel,error:relError}=await db.from("line_membros_rlk").select("*");
 if(relError){fail(relError);return}
-lines=data||[];vinculosLines=rel||[];atualizarCapitaes();renderizarLines();renderizarMembros()
+lines=data||[];vinculosLines=rel||[];atualizarCapitaes();renderizarLines();renderizarMembros();preencherSelectsAdvertencias()
 }
 function atualizarCapitaes(){
 const atual=$("lineCaptain").value;
@@ -860,6 +906,103 @@ if(error){fail(error);return}
 await carregarNoticias();msg("mainMessage","Notícia excluída.")
 }
 
+/* ADVERTÊNCIAS */
+let advertencias=[];
+function preencherSelectsAdvertencias(){
+  const lineOptions=lines.map(l=>`<option value="${esc(l.nome)}">${esc(l.nome)}</option>`).join("");
+  $("warningLine").innerHTML='<option value="">Sem line / não definida</option>'+lineOptions;
+  $("warningLineFilter").innerHTML='<option value="">Todas as lines</option>'+lineOptions;
+}
+async function carregarAdvertencias(){
+  const {data,error}=await db.from("advertencias_rlk").select("*").order("data_ocorrencia",{ascending:false}).order("criado_em",{ascending:false});
+  if(error){$("warningsList").innerHTML='<div class="empty">Não foi possível carregar. Confira se a tabela e as permissões foram criadas no Supabase.</div>';console.error(error);return}
+  advertencias=data||[];
+  preencherSelectsAdvertencias();
+  renderizarAdvertencias();
+}
+function numeroAdvertencia(nick,ignorarId=null){
+  const total=advertencias.filter(a=>String(a.nick||"").trim().toLowerCase()===String(nick||"").trim().toLowerCase()&&String(a.id)!==String(ignorarId)).length;
+  return Math.min(total+1,3);
+}
+function renderizarAdvertencias(){
+  const busca=($("warningSearch")?.value||"").trim().toLowerCase();
+  const line=$("warningLineFilter")?.value||"";
+  const filtradas=advertencias.filter(a=>(!busca||String(a.nick||"").toLowerCase().includes(busca))&&(!line||a.line===line));
+  $("warningCount").textContent=advertencias.length+" registro(s)";
+  if(!filtradas.length){$("warningsList").innerHTML='<div class="empty">Nenhuma advertência encontrada.</div>';return}
+  const grupos={};
+  filtradas.forEach(a=>{const key=String(a.nick||"Sem nick").trim().toLowerCase();if(!grupos[key])grupos[key]=[];grupos[key].push(a)});
+  $("warningsList").innerHTML=Object.values(grupos).map(lista=>{
+    lista.sort((a,b)=>Number(a.numero_adv)-Number(b.numero_adv)||String(b.data_ocorrencia).localeCompare(String(a.data_ocorrencia)));
+    const nome=lista[0].nick||"Sem nick";
+    const total=advertencias.filter(a=>String(a.nick||"").trim().toLowerCase()===String(nome).trim().toLowerCase()).length;
+    const encerramento=total>=3?'<span class="status inactive">3/3 · LIMITE ATINGIDO</span>':'<span class="status active">'+total+'/3 advertência(s)</span>';
+    return `<article class="item">
+      <div class="top-actions"><h3 style="margin:0">${esc(nome)}</h3>${encerramento}</div>
+      ${lista.map(a=>`<div class="line-player">
+        <strong>${Number(a.numero_adv)}ª ADVERTÊNCIA</strong> · ${esc(a.motivo)}
+        <small>${formatarData(a.data_ocorrencia)} · Line: ${esc(a.line||"Não definida")}</small>
+        ${a.descricao?`<p>${esc(a.descricao)}</p>`:""}
+        <small>Registrada em: ${a.criado_em?new Date(a.criado_em).toLocaleString("pt-BR"):"data não disponível"}</small>
+        <div class="actions">
+          <button class="btn btn-secondary btn-small" onclick="editarAdvertencia('${a.id}')">EDITAR</button>
+          <button class="btn btn-danger btn-small" onclick="excluirAdvertencia('${a.id}')">EXCLUIR</button>
+        </div>
+      </div>`).join("")}
+    </article>`;
+  }).join("");
+}
+$("warningNick").addEventListener("input",()=>{
+  const nick=$("warningNick").value.trim();
+  const id=$("warningId").value||null;
+  const n=numeroAdvertencia(nick,id);
+  $("warningFormMessage").textContent=nick?"Esta será a "+n+"ª advertência deste nick (considerando os registros atuais).":"";
+  $("warningFormMessage").className=nick?"message show":"message";
+});
+$("warningForm").addEventListener("submit",async e=>{
+  e.preventDefault();
+  if(!usuarioAtualId||!ADMINS.includes(usuarioAtualId)){msg("warningFormMessage","Acesso não autorizado.","error");return}
+  const id=$("warningId").value;
+  const nick=$("warningNick").value.trim();
+  const existente=id?advertencias.find(a=>String(a.id)===String(id)):null;
+  const numero=numeroAdvertencia(nick,id||null);
+  const payload={
+    nick,
+    line:$("warningLine").value||null,
+    motivo:$("warningReason").value,
+    descricao:$("warningDescription").value.trim()||null,
+    data_ocorrencia:$("warningDate").value,
+    numero_adv:numero
+  };
+  if(!payload.nick||!payload.motivo||!payload.data_ocorrencia){msg("warningFormMessage","Preencha nick, motivo e data.","error");return}
+  if(!id&&numero===3&&!confirm("Este registro será a 3ª advertência deste nick. Confirma o registro?"))return;
+  const result=id?await db.from("advertencias_rlk").update(payload).eq("id",id):await db.from("advertencias_rlk").insert(payload);
+  if(result.error){msg("warningFormMessage","Erro ao salvar: "+result.error.message,"error");return}
+  limparAdvertencia();await carregarAdvertencias();
+  msg("mainMessage",id?"Advertência atualizada!":"Advertência registrada!");
+});
+function editarAdvertencia(id){
+  const a=advertencias.find(x=>String(x.id)===String(id));if(!a)return;
+  $("warningId").value=a.id;$("warningNick").value=a.nick||"";
+  $("warningLine").value=a.line||"";$("warningReason").value=a.motivo||"";
+  $("warningDescription").value=a.descricao||"";$("warningDate").value=a.data_ocorrencia||"";
+  $("warningFormTitle").textContent="Editar advertência";
+  $("section-advertencias").scrollIntoView({behavior:"smooth"});
+}
+function limparAdvertencia(){
+  $("warningForm").reset();$("warningId").value="";
+  $("warningDate").value=new Date().toLocaleDateString("en-CA");
+  $("warningFormTitle").textContent="Registrar advertência";
+  $("warningFormMessage").className="message";$("warningFormMessage").textContent="";
+}
+async function excluirAdvertencia(id){
+  const a=advertencias.find(x=>String(x.id)===String(id));if(!a)return;
+  if(!confirm("Excluir a advertência de "+a.nick+"? O histórico e a contagem serão atualizados."))return;
+  const {error}=await db.from("advertencias_rlk").delete().eq("id",id);
+  if(error){fail(error);return}
+  await carregarAdvertencias();msg("mainMessage","Advertência excluída.");
+}
+
 /* CONTAS SECUNDÁRIAS */
 async function carregarContasSecundarias(){
 if(usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7")return;
@@ -1079,6 +1222,7 @@ $("buscarContaBtn").addEventListener("click", async () => {
 
 
 /* INICIAR */
+limparAdvertencia();
 verificarSessao();
 </script>
 </body>
