@@ -965,6 +965,8 @@ $("warningForm").addEventListener("submit",async e=>{
   const id=$("warningId").value;
   const nick=$("warningNick").value.trim();
   const existente=id?advertencias.find(a=>String(a.id)===String(id)):null;
+  const totalAtual=advertencias.filter(a=>String(a.nick||"").trim().toLowerCase()===nick.toLowerCase()&&String(a.id)!==String(id||"")).length;
+  if(!id&&totalAtual>=3){msg("warningFormMessage","Este jogador já atingiu 3 advertências. Não é possível registrar outra pelo painel.","error");return}
   const numero=numeroAdvertencia(nick,id||null);
   const payload={
     nick,
