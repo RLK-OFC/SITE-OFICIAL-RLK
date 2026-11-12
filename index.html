@@ -445,6 +445,98 @@ section {
   line-height:1.8;
 }
 
+/* ADMINISTRAÇÃO */
+
+.admin-list {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:20px;
+}
+
+.admin-card {
+  position:relative;
+  overflow:hidden;
+  text-align:center;
+  padding:30px 24px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(240,24,45,.13),transparent 48%),
+    linear-gradient(145deg,#191c25,#0d0f14);
+  transition:.3s;
+}
+
+.admin-card::before {
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:3px;
+  background:linear-gradient(90deg,transparent,var(--red),transparent);
+}
+
+.admin-card:hover {
+  transform:translateY(-6px);
+  border-color:var(--red);
+  box-shadow:0 14px 35px rgba(0,0,0,.3);
+}
+
+.admin-avatar {
+  width:112px;
+  height:112px;
+  margin:0 auto 20px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  border:2px solid rgba(240,24,45,.8);
+  box-shadow:0 0 0 7px rgba(240,24,45,.07),0 0 30px rgba(240,24,45,.18);
+  background:linear-gradient(145deg,#3a1019,#090a0e 70%);
+  color:#fff;
+}
+
+.admin-avatar span {
+  font-size:55px;
+  line-height:1;
+  text-shadow:0 3px 18px rgba(240,24,45,.7);
+}
+
+.avatar-leader { background:radial-gradient(circle at 50% 35%,#64202b,#14090d 72%); }
+.avatar-vice { background:radial-gradient(circle at 50% 35%,#343944,#0b0d12 72%); }
+.avatar-sub { background:radial-gradient(circle at 50% 35%,#5a1724,#10090d 72%); }
+
+.admin-level {
+  color:#ff6878;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+
+.admin-card h3 {
+  margin-top:10px;
+  font-size:25px;
+  font-weight:1000;
+}
+
+.admin-role {
+  display:inline-block;
+  margin-top:13px;
+  padding:8px 13px;
+  border:1px solid rgba(240,24,45,.35);
+  border-radius:4px;
+  background:rgba(240,24,45,.12);
+  color:#ff7180;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1.5px;
+}
+
+.admin-card p {
+  max-width:270px;
+  margin:16px auto 0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.8;
+}
+
 /* MEMBROS */
 
 .player-list,
@@ -1095,6 +1187,14 @@ footer a:hover {
   }
 }
 
+@media(max-width:850px) {
+  .admin-list { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media(max-width:560px) {
+  .admin-list { grid-template-columns:1fr; }
+}
+
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after {
     scroll-behavior:auto !important;
@@ -1122,6 +1222,7 @@ footer a:hover {
 
     <nav id="menuPrincipal">
       <a href="#inicio">INÍCIO</a>
+      <a href="#administracao">ADMINISTRAÇÃO</a>
       <a href="#membros">MEMBROS</a>
       <a href="#contas-secundarias">CONTAS SECUNDÁRIAS</a>
       <a href="#lines">LINES</a>
@@ -1228,6 +1329,40 @@ footer a:hover {
       <h3>Competitividade</h3>
       <p>Compromisso com evolução, guerras e desempenho coletivo.</p>
     </div>
+  </div>
+</section>
+
+<section id="administracao">
+  <div class="section-title">
+    <small>QUEM COMANDA A ORGANIZAÇÃO</small>
+    <h2>ADMINISTRAÇÃO RLK</h2>
+    <p>Conheça os responsáveis pela liderança e organização da RLK.</p>
+  </div>
+
+  <div class="admin-list">
+    <article class="admin-card">
+      <div class="admin-avatar avatar-leader" aria-hidden="true"><span>♛</span></div>
+      <div class="admin-level">LIDERANÇA PRINCIPAL</div>
+      <h3>Nicolas</h3>
+      <span class="admin-role">LÍDER</span>
+      <p>Responsável pela direção e pelas decisões principais da organização.</p>
+    </article>
+
+    <article class="admin-card">
+      <div class="admin-avatar avatar-vice" aria-hidden="true"><span>⚔</span></div>
+      <div class="admin-level">LIDERANÇA EXECUTIVA</div>
+      <h3>Fernando</h3>
+      <span class="admin-role">VICE-LÍDER</span>
+      <p>Auxilia na liderança e acompanha a organização das atividades da RLK.</p>
+    </article>
+
+    <article class="admin-card">
+      <div class="admin-avatar avatar-sub" aria-hidden="true"><span>✦</span></div>
+      <div class="admin-level">EQUIPE DE GESTÃO</div>
+      <h3>Lilian</h3>
+      <span class="admin-role">SUB-LÍDER</span>
+      <p>Contribui com a organização, o suporte aos membros e a gestão da guilda.</p>
+    </article>
   </div>
 </section>
 
@@ -1380,7 +1515,7 @@ menuPrincipal.querySelectorAll("a").forEach(link => {
 
 function ativarAnimacoes() {
   const elementos = document.querySelectorAll(
-    ".stat,.card,.player,.line-card,.result-group,.champ-card,.news-card,.about-image"
+    ".stat,.card,.admin-card,.player,.line-card,.result-group,.champ-card,.news-card,.about-image"
   );
 
   if (!("IntersectionObserver" in window)) {
