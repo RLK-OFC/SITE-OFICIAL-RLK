@@ -47,6 +47,9 @@ label{display:block;font-size:13px;color:#d4d4d8;margin-bottom:7px}
 .message.success{background:#12351f;color:#bbf7d0}
 .login-box{max-width:420px;margin:50px auto}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.tab:focus-visible,.btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+button:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:650px){.tabs{overflow-x:auto;flex-wrap:nowrap;padding:3px 2px 10px}.tab{white-space:nowrap;flex:0 0 auto}}
 .tab{background:#191b23;border:1px solid var(--line);color:#ccc;padding:12px 15px;border-radius:8px;font-weight:700}
 .tab.active{background:var(--red);border-color:var(--red);color:white}
 .section{display:none}
@@ -262,6 +265,10 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 </section>
 
 
+<!-- CONTAS SECUNDÁRIAS: acesso exclusivo ao administrador principal -->
+<section id="section-contas-secundarias" class="section">
+<div class="panel">
+<h2 class="form-title" id="secondaryFormTitle">Cadastrar conta secundária</h2>
 <p class="muted">Cadastre cada conta extra e identifique o membro responsável por ela.</p>
 
 <form id="secondaryAccountForm">
@@ -408,17 +415,39 @@ if(event==="PASSWORD_RECOVERY"){$("loginSection").classList.add("hidden");$("adm
 
 /* ABAS */
 function abrirAba(nome,button){
+const secao=$("section-"+nome);
+if(!secao){
+  console.error("Aba não encontrada:",nome);
+  msg("mainMessage","Não foi possível abrir esta área do painel.","error");
+  return;
+}
+if(nome==="contas-secundarias" && usuarioAtualId!=="a4a806a9-ac92-4ea2-8926-be9d3165e3e7"){
+  msg("mainMessage","Você não tem permissão para acessar esta área.","error");
+  return;
+}
 document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
 document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-$("section-"+nome).classList.add("active");if(button)button.classList.add("active")
+secao.classList.add("active");
+if(button)button.classList.add("active");
 }
 
 /* CARREGAMENTO */
 async function carregarTudo(){
-await carregarMembros();await carregarLines();await carregarMembros();
-await carregarResultados();await carregarCampeonatos();await carregarNoticias();
+  // Lines and their captain selectors depend on the member list being ready.
+  await carregarMembros();
+  await carregarLines();
 
-if(usuarioAtualId==="a4a806a9-ac92-4ea2-8926-be9d3165e3e7")await carregarContasSecundarias()
+  const tarefas=[
+    carregarResultados(),
+    carregarCampeonatos(),
+    carregarNoticias()
+  ];
+
+  if(usuarioAtualId==="a4a806a9-ac92-4ea2-8926-be9d3165e3e7"){
+    tarefas.push(carregarContasSecundarias());
+  }
+
+  await Promise.all(tarefas);
 }
 
 /* MEMBROS */
@@ -566,11 +595,24 @@ $("section-lines").scrollIntoView({behavior:"smooth"})
 }
 function limparLine(){$("lineForm").reset();$("lineId").value="";$("lineActive").value="true";$("lineFormTitle").textContent="Criar line"}
 async function excluirLine(id){
-const l=lines.find(x=>x.id===id);if(!l)return;
-if(!confirm(`Excluir ${l.nome}? Os jogadores ficarão sem line.`))return;
-const {error}=await db.from("lines_rlk").delete().eq("id",id);
-if(error){fail(error);return}
-await carregarLines();await carregarMembros();msg("mainMessage","Line excluída.")
+  const l=lines.find(x=>String(x.id)===String(id));
+  if(!l)return;
+  if(!confirm(`Excluir ${l.nome}? Os jogadores ficarão sem line.`))return;
+
+  // Remove os vínculos antes da line para respeitar possíveis chaves estrangeiras.
+  const {error:linksError}=await db
+    .from("line_membros_rlk")
+    .delete()
+    .eq("line_id",id);
+
+  if(linksError){fail(linksError);return}
+
+  const {error}=await db.from("lines_rlk").delete().eq("id",id);
+  if(error){fail(error);return}
+
+  await carregarLines();
+  await carregarMembros();
+  msg("mainMessage","Line excluída.");
 }
 
 /* JOGADORES DAS LINES */
@@ -650,10 +692,24 @@ async function salvarResultados(){
 const data=$("resultDate").value;if(!data){alert("Escolha a data da guerra.");return}
 if(!document.querySelector(".score-input")){alert("Carregue os membros primeiro.");return}
 const payload=[];
+let pontuacaoInvalida=false;
 document.querySelectorAll(".score-input").forEach(input=>{
-const valor=input.value.trim();
-if(valor!==""){const pontuacao=Number(valor);if(Number.isFinite(pontuacao)&&pontuacao>=0)payload.push({data_guerra:data,membro_id:input.dataset.member,pontuacao})}
+  const valor=input.value.trim();
+  if(valor==="")return;
+  const pontuacao=Number(valor);
+  if(!Number.isFinite(pontuacao)||pontuacao<0){
+    pontuacaoInvalida=true;
+    input.setCustomValidity("Informe uma pontuação válida, igual ou maior que zero.");
+    input.reportValidity();
+    input.addEventListener("input",()=>input.setCustomValidity(""),{once:true});
+    return;
+  }
+  payload.push({data_guerra:data,membro_id:input.dataset.member,pontuacao});
 });
+if(pontuacaoInvalida){
+  msg("mainMessage","Há pontuações inválidas. Corrija os campos destacados antes de salvar.","error");
+  return;
+}
 if(!confirm("Salvar os resultados desta data? Os resultados anteriores dessa mesma data serão substituídos."))return;
 const {error:delError}=await db.from("resultados_rlk").delete().eq("data_guerra",data);
 if(delError){fail(delError);return}
