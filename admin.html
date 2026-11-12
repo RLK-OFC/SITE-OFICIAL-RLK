@@ -178,6 +178,19 @@ hr{border:0;border-top:1px solid var(--line);margin:20px 0}
 </div>
 
 <div class="panel">
+<h2>PROCURAR MEMBRO POR ID</h2>
+<p class="muted">Digite o ID do Free Fire para localizar um membro já cadastrado.</p>
+<div class="grid">
+  <div class="field full"><label for="memberSearchId">ID DO JOGADOR</label><input id="memberSearchId" inputmode="numeric" maxlength="30" placeholder="Digite o ID do Free Fire"></div>
+</div>
+<div class="actions">
+  <button class="btn" type="button" id="memberSearchBtn">PROCURAR POR ID</button>
+  <button class="btn btn-secondary" type="button" id="memberSearchClear">LIMPAR BUSCA</button>
+</div>
+<div id="memberSearchResult" class="message"></div>
+</div>
+
+<div class="panel">
 <div class="top-actions">
 <h2 style="margin:0">Membros cadastrados</h2>
 <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -503,6 +516,33 @@ if(result.error){fail(result.error);return}
 limparMembro();await carregarMembros();await carregarLines();
 msg("mainMessage",id?"Membro atualizado!":"Membro cadastrado!")
 });
+async function procurarMembroPorId(){
+  const gameId=$("memberSearchId").value.trim();
+  const resultBox=$("memberSearchResult");
+  resultBox.className="message";
+  resultBox.textContent="";
+  if(!gameId){msg("memberSearchResult","Digite o ID do jogador.","error");return}
+  const button=$("memberSearchBtn");
+  button.disabled=true;button.textContent="PROCURANDO...";
+  const {data,error}=await db.from("membros_rlk").select("*").eq("id_jogo",gameId).limit(2);
+  button.disabled=false;button.textContent="PROCURAR POR ID";
+  if(error){msg("memberSearchResult","Erro ao procurar: "+error.message,"error");return}
+  if(!data||data.length===0){msg("memberSearchResult","Nenhum membro encontrado com esse ID.","error");return}
+  if(data.length>1){msg("memberSearchResult","Há mais de um cadastro com esse ID. Corrija os duplicados antes de editar.","error");return}
+  const m=data[0];
+  if(!members.some(item=>String(item.id)===String(m.id)))members.push(m);
+  resultBox.className="message show success";
+  resultBox.innerHTML="<strong>MEMBRO ENCONTRADO</strong><br>Nome: "+esc(nomeMembro(m))+"<br>Nick: "+esc(m.nick||"Não informado")+"<br>ID: "+esc(m.id_jogo||"Não informado")+"<br>Patente: "+esc(m.patente||"Não informada")+"<br>Função: "+esc(m.funcao||"Não informada")+"<br><button class='btn btn-small' type='button' id='memberSearchEdit'>EDITAR CADASTRO</button>";
+  $("memberSearchEdit").addEventListener("click",()=>editarMembro(m.id));
+}
+$("memberSearchBtn").addEventListener("click",procurarMembroPorId);
+$("memberSearchId").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();procurarMembroPorId()}});
+$("memberSearchClear").addEventListener("click",()=>{
+  $("memberSearchId").value="";
+  $("memberSearchResult").className="message";
+  $("memberSearchResult").textContent="";
+});
+
 function editarMembro(id){
 const m=members.find(x=>x.id===id);if(!m)return;
 $("memberId").value=m.id;$("memberName").value=m.nome||"";
